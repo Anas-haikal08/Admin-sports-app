@@ -40,7 +40,7 @@
 }
 
 .verification-status {
-  display: inline-flex;
+  display: inline;
   align-items: center;
   padding: 4px 8px;
   border-radius: 4px;

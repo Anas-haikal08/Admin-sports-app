@@ -1,22 +1,17 @@
+// src/pages/home/Sports.tsx
+
 import React, { useEffect, useState } from 'react';
 import AppPageMetadata from 'src/domain/core/AppPageMetadata';
 import { useBreadcrumbContext } from 'src/domain/utility/AppContextProvider/BreadcrumbContextProvider';
 import { useIntl } from 'react-intl';
 import IntlMessages from 'src/domain/utility/IntlMessages';
+import { Table, Button, Modal, Form, Input, message } from 'antd';
+import axiosInstance from 'src/shared/utils/axios.config';
 import './sports.css';
 
 interface ISport {
     id: number;
     name: string;
-    positions: {
-        id: number;
-        name: string;
-        key: string | null;
-        sport_position: {
-            sportId: number;
-            positionId: number;
-        };
-    }[];
 }
 
 const Sports: React.FC = () => {
@@ -32,133 +27,108 @@ const Sports: React.FC = () => {
         ]);
     }, []);
 
-    const [sports, setSports] = useState<ISport[]>([
-        {
-            id: 1,
-            name: 'Football',
-            positions: [
-                {
-                    id: 101,
-                    name: 'Goalkeeper',
-                    key: 'GK',
-                    sport_position: {
-                        sportId: 1,
-                        positionId: 101,
-                    },
-                },
-                {
-                    id: 102,
-                    name: 'Defender',
-                    key: null,
-                    sport_position: {
-                        sportId: 1,
-                        positionId: 102,
-                    },
-                },
-                {
-                    id: 103,
-                    name: 'Midfielder',
-                    key: null,
-                    sport_position: {
-                        sportId: 1,
-                        positionId: 103,
-                    },
-                },
-                {
-                    id: 104,
-                    name: 'Forward',
-                    key: null,
-                    sport_position: {
-                        sportId: 1,
-                        positionId: 104,
-                    },
-                },
-            ],
-        },
-        {
-            id: 2,
-            name: 'Basketball',
-            positions: [
-                {
-                    id: 201,
-                    name: 'Point Guard',
-                    key: null,
-                    sport_position: {
-                        sportId: 2,
-                        positionId: 201,
-                    },
-                },
-                {
-                    id: 202,
-                    name: 'Shooting Guard',
-                    key: null,
-                    sport_position: {
-                        sportId: 2,
-                        positionId: 202,
-                    },
-                },
-                {
-                    id: 203,
-                    name: 'Small Forward',
-                    key: null,
-                    sport_position: {
-                        sportId: 2,
-                        positionId: 203,
-                    },
-                },
-                {
-                    id: 204,
-                    name: 'Power Forward',
-                    key: null,
-                    sport_position: {
-                        sportId: 2,
-                        positionId: 204,
-                    },
-                },
-                {
-                    id: 205,
-                    name: 'Center',
-                    key: null,
-                    sport_position: {
-                        sportId: 2,
-                        positionId: 205,
-                    },
-                },
-            ],
-        },
-    ]);
+    const [sports, setSports] = useState<ISport[]>([]);
+    const [loading, setLoading] = useState<boolean>(true);
+    const [isModalVisible, setIsModalVisible] = useState<boolean>(false);
+    const [form] = Form.useForm();
 
-    // const [selectedSportId, setSelectedSportId] = useState<number | null>(null);
+    useEffect(() => {
+        fetchSports();
+    }, []);
+
+    const fetchSports = async () => {
+        try {
+            const response = await axiosInstance.get('/sport/all');
+            setSports(response.data);
+            setLoading(false);
+        } catch (error) {
+            console.error('Failed to fetch sports:', error);
+            setLoading(false);
+        }
+    };
+
+    const handleAddSport = async (values: { name: string }) => {
+        try {
+            const response = await axiosInstance.post('/sport/add', values);
+            setSports([...sports, response.data]);
+            setIsModalVisible(false);
+            form.resetFields();
+            message.success('Sport added successfully!');
+        } catch (error) {
+            console.error('Failed to add sport:', error);
+            message.error('Failed to add sport.');
+        }
+    };
+
+    const handleDeleteSport = async (id: number) => {
+        try {
+            await axiosInstance.delete(`/sport/delete/${id}`);
+            setSports(sports.filter((sport) => sport.id !== id));
+            message.success('Sport deleted successfully!');
+        } catch (error) {
+            console.error('Failed to delete sport:', error);
+            message.error('Failed to delete sport.');
+        }
+    };
+
+    const columns = [
+        {
+            title: 'Sport ID',
+            dataIndex: 'id',
+            key: 'id',
+        },
+        {
+            title: 'Sport Name',
+            dataIndex: 'name',
+            key: 'name',
+        },
+        {
+            title: 'Actions',
+            key: 'actions',
+            render: (text: string, record: ISport) => (
+                <Button type="primary" danger onClick={() => handleDeleteSport(record.id)}>
+                    Delete
+                </Button>
+            ),
+        },
+    ];
 
     return (
-        <div className="subscriptions-page">
+        <div className="sports-page">
             <h1 className="page-title">Sports</h1>
-            <table className="subscriptions-table">
-                <thead>
-                    <tr>
-                        <th>Sport ID</th>
-                        <th>Sport Name</th>
-                        <th>Positions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {sports.map((sport) => (
-                        <tr key={sport.id}>
-                            <td>{sport.id}</td>
-                            <td>{sport.name}</td>
-                            <td>
-                                <ul>
-                                    {sport.positions.map((position) => (
-                                        <li key={position.id}>
-                                            {position.name} ({position.key})
-                                        </li>
-                                    ))}
-                                </ul>
-                            </td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
+            <div>
+                <Button className='add-btn' type="primary" onClick={() => setIsModalVisible(true)} style={{ marginBottom: 16 }}>
+                    Add Sport
+                </Button>
+            </div>
+            <Table
+                columns={columns}
+                dataSource={sports}
+                rowKey="id"
+                loading={loading}
+                className="sports-table"
+            />
+            <Modal
+                title="Add Sport"
+                visible={isModalVisible}
+                onCancel={() => setIsModalVisible(false)}
+                footer={null}
+            >
+                <Form form={form} onFinish={handleAddSport} layout="vertical">
+                    <Form.Item
+                        name="name"
+                        label="Sport Name"
+                        rules={[{ required: true, message: 'Please enter the sport name' }]}
+                    >
+                        <Input />
+                    </Form.Item>
+                    <Form.Item>
+                        <Button className='add-btn' type="primary" htmlType="submit">
+                            Add
+                        </Button>
+                    </Form.Item>
+                </Form>
+            </Modal>
         </div>
     );
 };

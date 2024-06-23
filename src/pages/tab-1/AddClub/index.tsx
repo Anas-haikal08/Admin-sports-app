@@ -1,42 +1,23 @@
-import React, { useEffect, useState } from 'react';
-import { useIntl } from 'react-intl';
-import AppPageMetadata from 'src/domain/core/AppPageMetadata';
-import { useBreadcrumbContext } from 'src/domain/utility/AppContextProvider/BreadcrumbContextProvider';
-import IntlMessages from 'src/domain/utility/IntlMessages';
-import './AddClub.css';
-interface ITab12Props { }
+import React, { useState } from 'react';
+import axiosInstance from 'src/shared/utils/axios.config';
+import { useNavigate } from 'react-router-dom'; // Import useNavigate from react-router-dom
+import './AddClub.css'; // Import the CSS file for styling
 
-interface ClubFormData {
-  name: string;
-  description: string;
-  location: string;
-  picture: FileList | null;
-}
+interface AddClubProps { }
 
-const AddClub: React.FC<ITab12Props> = (props) => {
-  const { setBreadcrumb }: any = useBreadcrumbContext();
-  const { messages } = useIntl();
-  const [formData, setFormData] = useState<ClubFormData>({
-    name: '',
-    description: '',
-    location: '',
-    picture: null,
+const AddClub: React.FC<AddClubProps> = () => {
+  const navigate = useNavigate(); // Initialize navigate function from useNavigate
+  const [formData, setFormData] = useState({
+    username: '',
+    email: '',
+    password: '',
+    phone_number: '',
+    role_id: '2', // Static role_id as 2
   });
 
-  useEffect(() => {
-    setBreadcrumb([
-      {
-        text: <IntlMessages id="tab1.sideBarName" />,
-        url: '/Clubs-Management/Add-Club',
-      },
-      {
-        text: <IntlMessages id="tab1.tab12" />,
-        url: '/Clubs-Management/Add-Club',
-      },
-    ]);
-  }, []);
+  const [formError, setFormError] = useState(false); // State to manage form errors
 
-  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = event.target;
     setFormData((prevFormData) => ({
       ...prevFormData,
@@ -44,38 +25,46 @@ const AddClub: React.FC<ITab12Props> = (props) => {
     }));
   };
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files && event.target.files[0];
-  };
-
-  const handleSubmit = (event: React.FormEvent) => {
+  const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    // Handle form submission here
-    console.log(formData);
+
+    try {
+      // Make the POST request using axiosInstance
+      const response = await axiosInstance.post('/auth/register', formData);
+
+      // Handle success response here (e.g., show success message, redirect, etc.)
+      console.log('Success:', response.data);
+
+      // Navigate to /Clubs-Management/Clubs after successful form submission
+      navigate('/Clubs-Management/Clubs');
+    } catch (error) {
+      // Handle error (e.g., show error message)
+      console.error('Error:', error);
+      setFormError(true); // Set form error state to true on error
+    }
   };
 
   return (
     <div className="tab12-card">
-      <AppPageMetadata title={messages['tab1.tab12'].toString()} />
-      <form onSubmit={handleSubmit}>
+      <h1 className='title-card'>Add Club</h1>
+      <form onSubmit={handleSubmit} className="form">
         <div className="form-group">
-          <h1 className='title-card'>Add Club</h1>
-          <label htmlFor="name">Name:</label>
-          <input type="text" id="name" name="name" value={formData.name} onChange={handleInputChange} />
+          <label htmlFor="username">Username:</label>
+          <input type="text" id="username" name="username" value={formData.username} onChange={handleInputChange} required className={formError ? 'error' : ''} />
         </div>
         <div className="form-group">
-          <label htmlFor="description">Description:</label>
-          <textarea id="description" name="description" value={formData.description} onChange={handleInputChange} />
+          <label htmlFor="email">Email:</label>
+          <input type="email" id="email" name="email" value={formData.email} onChange={handleInputChange} required className={formError ? 'error' : ''} />
         </div>
         <div className="form-group">
-          <label htmlFor="location">Location:</label>
-          <input type="text" id="location" name="location" value={formData.location} onChange={handleInputChange} />
+          <label htmlFor="password">Password:</label>
+          <input type="password" id="password" name="password" value={formData.password} onChange={handleInputChange} required className={formError ? 'error' : ''} />
         </div>
         <div className="form-group">
-          <label htmlFor="picture">Picture:</label>
-          <input type="file" id="picture" name="picture" onChange={handleFileChange} />
+          <label htmlFor="phone_number">Phone Number:</label>
+          <input type="text" id="phone_number" name="phone_number" value={formData.phone_number} onChange={handleInputChange} required className={formError ? 'error' : ''} />
         </div>
-        <button type="submit">Add Club</button>
+        <button type="submit" disabled={formError}>Add Club</button>
       </form>
     </div>
   );

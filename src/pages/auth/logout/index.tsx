@@ -1,32 +1,38 @@
-import {useIntl} from 'react-intl';
-import '../AuthWrapper.style.less';
+import { useEffect } from 'react';
+import { useIntl } from 'react-intl';
+import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import AppConfirmPopup from '../../../domain/core/AppConfirmPopup';
-import {useDispatch, useSelector} from 'react-redux';
-import {
-  getLoading,
-  getVisibleLogout,
-} from 'src/domain/app/redux/auth/auth-selectors';
-import {
-  setLoading,
-  setVisibleLogout,
-} from 'src/domain/app/redux/auth/auth-slice';
-import {useCookies} from 'react-cookie';
-import {AUTH_TOKEN, FCM_TOKEN_KEY} from 'src/shared/constants/AppConst';
+import { getLoading, getVisibleLogout } from 'src/domain/app/redux/auth/auth-selectors';
+import { setLoading, setVisibleLogout } from 'src/domain/app/redux/auth/auth-slice';
+import '../AuthWrapper.style.less';
 
 const Logout = () => {
   const visibleLogout = useSelector(getVisibleLogout);
   const loading = useSelector(getLoading);
   const dispatch = useDispatch();
-  const {messages} = useIntl();
-  const [, , removeCookie] = useCookies([AUTH_TOKEN]);
+  const { messages } = useIntl();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!localStorage.getItem('token')) {
+      navigate('/sign-in');
+      window.location.reload();
+    }
+  }, [navigate]);
 
   const logout = () => {
+    console.log('Logout function called');
     dispatch(setLoading(true));
-    removeCookie(AUTH_TOKEN, {path: '/', sameSite: true});
+    localStorage.removeItem('token');
+    console.log('Token removed from localStorage');
     dispatch(setVisibleLogout(false));
     dispatch(setLoading(false));
-    localStorage.removeItem(FCM_TOKEN_KEY);
+    navigate('/sign-in');
+    window.location.reload();
   };
+
+  console.log('Token in localStorage:', localStorage.getItem('token'));
 
   return (
     <AppConfirmPopup

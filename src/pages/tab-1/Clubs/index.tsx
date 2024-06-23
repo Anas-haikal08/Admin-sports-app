@@ -1,14 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import AppPageMetadata from 'src/domain/core/AppPageMetadata';
+import axiosInstance from 'src/shared/utils/axios.config';
 import { useBreadcrumbContext } from 'src/domain/utility/AppContextProvider/BreadcrumbContextProvider';
 import { useIntl } from 'react-intl';
-import IntlMessages from 'src/domain/utility/IntlMessages';
-import './Clubs.css';
-import { Link } from "react-router-dom";
+import { Link } from 'react-router-dom';
+import { Button, Table, Modal } from 'antd';
 import { InfoCircleOutlined } from '@ant-design/icons';
-import { Button } from 'antd';
-import DetModal from './modal';
+import AppPageMetadata from 'src/domain/core/AppPageMetadata';
+import IntlMessages from 'src/domain/utility/IntlMessages';
 import backGroundSignin from '../../../../src/assets/images/backGroundSignin.jpg';
+import './Clubs.css';
 import './elements.css';
 
 interface IClub {
@@ -16,7 +16,7 @@ interface IClub {
   name: string;
   description: string;
   location: string;
-  picture: string;
+  pic: string;
   isBlocked: boolean;
   user_id: number;
 }
@@ -24,54 +24,76 @@ interface IClub {
 const ClubList: React.FC = () => {
   const { setBreadcrumb }: any = useBreadcrumbContext();
   const { messages } = useIntl();
+  const [clubs, setClubs] = useState<IClub[]>([]);
+  const [selectedClub, setSelectedClub] = useState<IClub | null>(null);
+  const [modalVisible, setModalVisible] = useState(false);
 
   useEffect(() => {
     setBreadcrumb([
       {
-        text: <IntlMessages id='tab1.sideBarName' />,
+        text: <IntlMessages id="tab1.sideBarName" />,
         url: '/Clubs-Management/Clubs',
       },
     ]);
+
+    fetchClubs(); // Fetch clubs when component mounts
   }, []);
 
-  const [clubs, setClubs] = useState<IClub[]>([
-    {
-      id: 1,
-      name: 'Club A',
-      description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit ssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss.',
-      location: 'City A',
-      picture: backGroundSignin,
-      isBlocked: false,
-      user_id: 1,
-    },
-    {
-      id: 2,
-      name: 'Club B',
-      description: 'Sed ut perspiciatis unde omnis iste natus error sit voluptatem.',
-      location: 'City B',
-      picture: backGroundSignin,
-      isBlocked: true,
-      user_id: 2,
-    },
-    {
-      id: 3,
-      name: 'Club C',
-      description: 'At vero eos et accusamus et iusto odio dignissimos.',
-      location: 'City C',
-      picture: backGroundSignin,
-      isBlocked: false,
-      user_id: 3,
-    },
-  ]);
+  const fetchClubs = async () => {
+    try {
+      const response = await axiosInstance.get('/club/all');
+      setClubs(response.data); // Assuming response.data is an array of clubs
+    } catch (error) {
+      console.error('Error fetching clubs:', error);
+      // Handle error fetching clubs (e.g., show error message)
+    }
+  };
 
-  const [selectedClub, setSelectedClub] = useState<IClub | null>(null);
+  const columns = [
+    {
+      title: 'ID',
+      dataIndex: 'id',
+      key: 'id',
+    },
+    {
+      title: 'Name',
+      dataIndex: 'name',
+      key: 'name',
+    },
+    {
+      title: 'Location',
+      dataIndex: 'location',
+      key: 'location',
+    },
+    {
+      title: 'Is Blocked',
+      dataIndex: 'isBlocked',
+      key: 'isBlocked',
+      render: (isBlocked: boolean) => (
+        <div className={`verification-status ${isBlocked ? 'not-verified' : 'verified'}`}>
+          {isBlocked ? 'Blocked' : 'Active'}
+        </div>
+      ),
+    },
+    {
+      title: 'Actions',
+      key: 'actions',
+      render: (text: any, record: IClub) => (
+        <Button onClick={() => openDetailsPopup(record)}>
+          <InfoCircleOutlined />
+        </Button>
+      ),
+    },
+  ];
 
   const openDetailsPopup = (club: IClub) => {
     setSelectedClub(club);
+    setModalVisible(true);
   };
 
   const closeModal = () => {
     setSelectedClub(null);
+    setModalVisible(false);
   };
 
   return (
@@ -86,36 +108,25 @@ const ClubList: React.FC = () => {
             <Button className="btn">Add Club +</Button>
           </Link>
         </div>
-        <div className="data-grid">
-          <div className="grid-header">
-            <div>ID</div>
-            <div>Name</div>
-            <div>Is Blocked</div>
-            <div>Actions</div>
-          </div>
-          {clubs.map((club) => (
-            <div className="club-item" key={club.id}>
-              <div>{club.id}</div>
-              <div>{club.name}</div>
-              <div>
-                {club.isBlocked ? (
-                  <div className="verification-status not-verified">Blocked</div>
-                ) : (
-                  <div className="verification-status verified">Active</div>
-                )}
-              </div>
-              <div className="actions-column">
-                <Button onClick={() => openDetailsPopup(club)}>
-                  <InfoCircleOutlined />
-                </Button>
-              </div>
-            </div>
 
-          ))}
-        </div>
-        <DetModal club={selectedClub} closeModal={closeModal} />
+        <Table columns={columns} dataSource={clubs} rowKey="id" />
+
+        <Modal
+          title={selectedClub?.name}
+          visible={modalVisible}
+          onCancel={closeModal}
+          footer={[
+            <Button key="close" onClick={closeModal}>
+              Close
+            </Button>,
+          ]}
+        >
+          <p>Description: {selectedClub?.description}</p>
+          <p>User ID: {selectedClub?.user_id}</p>
+          {/* Additional fields as needed */}
+        </Modal>
       </div>
-    </AppPageMetadata >
+    </AppPageMetadata>
   );
 };
 
