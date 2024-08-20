@@ -15,9 +15,7 @@ const AppSidebar = ({isCollapsed}) => {
       collapsedWidth='0'
       collapsed={isCollapsed}>
       <Fragment>
-        <div className='logo-sidebar'>
-          <img src='/assets/images/logos.png' alt='logo' />
-        </div>
+        <div className='logo-sidebar'>Admin Dashboard</div>
       </Fragment>
       <SimpleBarReact className={'app-mini-sidebar-scrollbar'}>
         <AppVerticalMenu />
